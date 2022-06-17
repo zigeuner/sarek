@@ -1051,6 +1051,7 @@ process MapReads {
     CN = params.sequencing_center ? "CN:${params.sequencing_center}\\t" : ""
     readGroup = "@RG\\tID:${idRun}\\t${CN}PU:${idRun}\\tSM:${idSample}\\tLB:${idSample}\\tPL:illumina"
     // adjust mismatch penalty for tumor samples
+    // using -Y to turn off hard-clipping (use soft instead) for secondary alignments
     status = statusMap[idPatient, idSample]
     extra = status == 1 ? "-B 3" : ""
     convertToFastq = hasExtension(inputFile1, "bam") ? "gatk --java-options -Xmx${task.memory.toGiga()}g SamToFastq --INPUT=${inputFile1} --FASTQ=/dev/stdout --INTERLEAVE=true --NON_PF=true | \\" : ""
@@ -1058,7 +1059,7 @@ process MapReads {
     aligner = params.aligner == "bwa-mem2" ? "bwa-mem2" : "bwa"
     """
     ${convertToFastq}
-    ${aligner} mem -K 100000000 -R \"${readGroup}\" ${extra} -t ${task.cpus} -M ${fasta} \
+    ${aligner} mem -K 100000000 -R \"${readGroup}\" ${extra} -Y -t ${task.cpus} -M ${fasta} \
     ${input} | \
     samtools sort --threads ${task.cpus} -m 2G - > ${idSample}_${idRun}.bam
     """
